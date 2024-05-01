@@ -1,7 +1,9 @@
 import { H3Event } from 'h3'
 
 export async function ensureAuth(event: H3Event) {
-  const session = await auth.getSession(getCookie(event, 'auth_session'))
+  const authRequest = auth.handleRequest(event);
+  //const session = await auth.getSession(getCookie(event, 'auth_session'))
+  const session = await authRequest.validateBearerToken()
   const user = session?.user ?? null
 
   const adminAddresses = [
