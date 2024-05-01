@@ -3,6 +3,7 @@ import pinataSDK from '@pinata/sdk'
 import { nanoid } from 'nanoid'
 import fs from 'node:fs'
 import { useIpfsLink } from "~/utils"
+import prisma from '~/utils/db'
 
 export default defineEventHandler(async (event) => {
   const user = await ensureAuth(event)
