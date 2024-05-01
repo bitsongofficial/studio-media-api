@@ -25,6 +25,6 @@ export async function ensureAuth(event: H3Event) {
   return {
     ...user,
     isAdmin: adminAddresses.includes(user.address),
-    canUpload: user.beta_features !== undefined || user.beta_features?.includes('upload')
+    canUpload: user.beta_features !== undefined && user.beta_features?.includes('upload')
   }
 }
