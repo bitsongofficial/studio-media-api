@@ -51,6 +51,8 @@ export default defineEventHandler(async (event) => {
       id: newTrack.id
     }
   } catch (e) {
+    console.error((e as Error).message)
+
     throw createError({
       message: 'Error uploading file',
       status: 500
