@@ -1,6 +1,7 @@
 import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { toCountry, toExplicit, toLicense, toMarkdown, toTrackGenre, trackMetadata } from "@bitsongjs/metadata";
 import pinataSDK from '@pinata/sdk'
+import prisma from '~/utils/db'
 
 export default defineEventHandler(async (event) => {
   const { track } = await ensureUserTrack(event)

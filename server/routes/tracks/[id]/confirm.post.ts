@@ -1,5 +1,6 @@
 import { ZodError } from "zod"
 import { trackUpdateSchema } from "~/utils"
+import prisma from '~/utils/db'
 
 export default defineEventHandler(async (event) => {
   const { track: _track, user } = await ensureUserTrack(event)

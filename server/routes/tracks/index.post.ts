@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import { getMediaData, validateAudioData, readForm } from '~/utils';
+import prisma from '~/utils/db'
 
 export default defineEventHandler(async (event) => {
   const user = await ensureAuth(event)

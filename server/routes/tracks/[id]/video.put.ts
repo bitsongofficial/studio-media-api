@@ -1,3 +1,5 @@
+import prisma from '~/utils/db'
+
 export default defineEventHandler(async (event) => {
   const user = await ensureAuth(event)
   const id = getRouterParam(event, 'id')
