@@ -4,6 +4,7 @@ import prisma from '~/utils/db'
 
 export default defineEventHandler(async (event) => {
   const user = await ensureAuth(event)
+  if (!user.canUpload) throw createError({ status: 403, message: "Unauthorized" })
 
   const tracks = await prisma.tracks.findMany({
     where: {
