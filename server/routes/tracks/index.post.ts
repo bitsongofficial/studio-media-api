@@ -54,7 +54,7 @@ export default defineEventHandler(async (event) => {
     console.error((e as Error).message)
 
     throw createError({
-      message: 'Error uploading file',
+      message: `Error processing file ${(e as Error).message}`,
       status: 500
     })
   }
