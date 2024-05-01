@@ -9,8 +9,8 @@ export default defineEventHandler(async (event) => {
   const user = await ensureAuth(event)
   if (!user.isAdmin) {
     throw createError({
-      message: 'Unauthorized',
-      status: 401
+      statusMessage: 'Unauthorized',
+      statusCode: 401
     })
   }
 
@@ -25,24 +25,24 @@ export default defineEventHandler(async (event) => {
     }
   })
 
-  if (!nft) throw createError('NFT not found')
-  if (!nft.uri || !nft.uri.startsWith('ipfs://')) throw createError('NFT metadata not found')
+  if (!nft) throw createError({ statusCode: 404, statusMessage: 'NFT not found' })
+  if (!nft.uri || !nft.uri.startsWith('ipfs://')) throw createError({ statusCode: 400, statusMessage: 'Invalid NFT URI' })
 
   const mnft = await prisma.music_nfts.findUnique({
     where: {
       id: nft.id
     }
   })
-  if (mnft) throw createError('NFT is already transcoded')
+  if (mnft) throw createError({ statusCode: 400, statusMessage: 'NFT already transcoded' })
 
   // fetch metadata
   console.log(`Fetching metadata: ${useIpfsLink(nft.uri)}`)
   const rawMetadata = await $fetch(useIpfsLink(nft.uri))
-  if (!rawMetadata) throw createError('Error fetching metadata')
+  if (!rawMetadata) throw createError({ statusCode: 400, statusMessage: 'Error fetching metadata' })
 
   // validate metadata
   const metadata = TrackSchema.safeParse(rawMetadata)
-  if (!metadata.success) throw createError('Invalid NFT metadata')
+  if (!metadata.success) throw createError({ statusCode: 400, statusMessage: 'Invalid metadata' })
 
   // save metadata to storage
   await useStorage('mnft').setItem(`${nft.id}/metadata`, metadata.data)
@@ -50,7 +50,7 @@ export default defineEventHandler(async (event) => {
   // fetch image
   console.log(`Fetching image: ${useIpfsLink(metadata.data.image)}`)
   const fetchedImage = await $fetch(useIpfsLink(metadata.data.image))
-  if (!fetchedImage) throw createError('Error fetching image')
+  if (!fetchedImage) throw createError({ statusCode: 400, statusMessage: 'Error fetching image' })
 
   // convert image to buffer
   const bufferImage = Buffer.from(await (fetchedImage as Blob).arrayBuffer())
@@ -64,7 +64,7 @@ export default defineEventHandler(async (event) => {
   // fetch audio
   console.log(`Fetching audio: ${useIpfsLink(metadata.data.bitsong.audio)}`)
   const fetchedAudio = await $fetch(useIpfsLink(metadata.data.bitsong.audio))
-  if (!fetchedAudio) throw createError('Error fetching audio')
+  if (!fetchedAudio) throw createError({ statusCode: 400, statusMessage: 'Error fetching audio' })
 
   // convert audio to buffer
   const bufferAudio = Buffer.from(await (fetchedAudio as Blob).arrayBuffer())
