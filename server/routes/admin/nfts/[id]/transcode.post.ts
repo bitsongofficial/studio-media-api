@@ -60,6 +60,7 @@ export default defineEventHandler(async (event) => {
   await useStorage('mnft').setItemRaw(`${nft.id}/image`, bufferImage)
 
   // fetch audio
+  console.log(`Fetching audio: ${useIpfsLink(metadata.data.bitsong.audio)}`)
   const fetchedAudio = await $fetch(useIpfsLink(metadata.data.bitsong.audio))
   if (!fetchedAudio) throw createError('Error fetching audio')
 
