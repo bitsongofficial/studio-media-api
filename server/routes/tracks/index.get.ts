@@ -37,6 +37,10 @@ export async function withPrivateSignedUrls(tracks: {
   artwork: string | null;
 }[] | null> {
   return Promise.all(tracks.map(async (track) => {
+    if (baseUrl.startsWith('media')) {
+      baseUrl = `https://${baseUrl}`
+    }
+
     if (!track.artwork) return {
       ...track,
       artwork: `${baseUrl}/images/default.png`
