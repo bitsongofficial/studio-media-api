@@ -6,6 +6,8 @@ export async function ensureAuth(event: H3Event) {
   const session = await authRequest.validateBearerToken()
   const user = session?.user ?? null
 
+  console.log('user', user)
+
   const adminAddresses = [
     'bitsong1h882ezq7dyewld6gfv2e06qymvjxnu842586h2', //dev
     'bitsong1q49ntyz2wjurrm56ymm5hjnz60ya3x783c5m6e',
@@ -23,6 +25,6 @@ export async function ensureAuth(event: H3Event) {
   return {
     ...user,
     isAdmin: adminAddresses.includes(user.address),
-    canUpload: user.beta_features?.includes('upload')
+    canUpload: user.beta_features !== undefined || user.beta_features?.includes('upload')
   }
 }
