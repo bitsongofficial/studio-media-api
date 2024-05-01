@@ -23,7 +23,7 @@ type TrackWithSignedUrls = Prisma.tracksGetPayload<{
 async function withPrivateSignedUrls(track: TrackWithSignedUrls, baseUrl: string): Promise<TrackWithSignedUrls> {
   let artwork, audio, video;
 
-  if (baseUrl.startsWith('media-api')) {
+  if (baseUrl.startsWith('media')) {
     baseUrl = `https://${baseUrl}`
   }
 
