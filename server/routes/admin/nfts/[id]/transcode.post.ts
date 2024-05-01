@@ -36,6 +36,7 @@ export default defineEventHandler(async (event) => {
   if (mnft) throw createError('NFT is already transcoded')
 
   // fetch metadata
+  console.log(`Fetching metadata: ${useIpfsLink(nft.uri)}`)
   const rawMetadata = await $fetch(useIpfsLink(nft.uri))
   if (!rawMetadata) throw createError('Error fetching metadata')
 
@@ -47,6 +48,7 @@ export default defineEventHandler(async (event) => {
   await useStorage('mnft').setItem(`${nft.id}/metadata`, metadata.data)
 
   // fetch image
+  console.log(`Fetching image: ${useIpfsLink(metadata.data.image)}`)
   const fetchedImage = await $fetch(useIpfsLink(metadata.data.image))
   if (!fetchedImage) throw createError('Error fetching image')
 
