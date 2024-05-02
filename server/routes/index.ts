@@ -1,3 +1,6 @@
 export default eventHandler((event) => {
-  return "Start by editing <code>server/routes/index.ts</code>.";
+  return {
+    app: 'BitSong Media Server API',
+    status: 'ok',
+  };
 });
