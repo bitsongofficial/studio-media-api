@@ -6,16 +6,16 @@ export default defineNitroConfig({
       base: './storage/mnft',
     }
   },
-  routeRules: {
-    'tracks/**': {
-      cors: false,
-      // headers: {
-      //   'Access-Control-Allow-Origin': '*',
-      //   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      //   'Access-Control-Allow-Headers': 'Authorization, Content-Type',
-      // }
-    }
-  },
+  // routeRules: {
+  //   'tracks/**': {
+  //     cors: false,
+  //     // headers: {
+  //     //   'Access-Control-Allow-Origin': '*',
+  //     //   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  //     //   'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+  //     // }
+  //   }
+  // },
   runtimeConfig: {
     ipfs: {
       gateway: ""
