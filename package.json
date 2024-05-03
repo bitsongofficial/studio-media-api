@@ -9,6 +9,7 @@
     "preview": "node .output/server/index.mjs"
   },
   "devDependencies": {
+    "@types/fluent-ffmpeg": "^2.1.24",
     "@types/formidable": "^3.4.5",
     "@types/uuid": "^9.0.8",
     "nitropack": "latest",
