@@ -1,5 +1,4 @@
 import { fileTypeFromBuffer } from "file-type"
-import { z } from 'zod'
 import { fixedSize } from 'ipfs-unixfs-importer/chunker'
 import { balanced } from 'ipfs-unixfs-importer/layout'
 import pinataSDK from '@pinata/sdk'
@@ -12,6 +11,17 @@ export default defineEventHandler(async (event) => {
   })
 
   for (const pin of list.rows) {
+
+    const exist = await prisma.storage_ipfs.findUnique({
+      where: {
+        id: pin.ipfs_pin_hash
+      }
+    })
+    if (exist) {
+      consola.info(`File already exists: ${pin.ipfs_pin_hash}\n`)
+      continue
+    }
+
     const queryCid = pin.ipfs_pin_hash
     const providerUrl = "https://yellow-hilarious-jay-665.mypinata.cloud/ipfs/"
 
@@ -84,6 +94,7 @@ export default defineEventHandler(async (event) => {
           name: pin.metadata.name.toString(),
           size: buffer.byteLength,
           mimetype: fileType,
+          created_at: pin.date_pinned
         }
       })
     } catch (error) {
