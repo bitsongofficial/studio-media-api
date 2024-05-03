@@ -101,9 +101,9 @@ export default defineNitroPlugin(async (nitroApp) => {
 
   nitroApp.hooks.hook('close', async () => {
     console.log('[helia] plugin close...')
-    // await blockstore.close()
-    // await datastore.close()
-    // await helia.stop()
+    await blockstore.close()
+    await datastore.close()
+    await helia.stop()
   })
 
   console.log('[helia] plugin loaded')
