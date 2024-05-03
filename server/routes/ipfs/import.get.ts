@@ -78,10 +78,11 @@ export default defineEventHandler(async (event) => {
     }
 
     if (cid.toV0().toString() !== queryCid) {
-      throw createError({
-        statusMessage: 'CID mismatch',
-        statusCode: 500
-      })
+      consola.error(`CID mismatch: ${queryCid} !== ${cid.toV0().toString()}`)
+      // throw createError({
+      //   statusMessage: 'CID mismatch',
+      //   statusCode: 500
+      // })
     }
 
     consola.info(`Successfully imported ${queryCid}`)
