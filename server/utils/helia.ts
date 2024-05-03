@@ -21,15 +21,15 @@ import type { VerifiedFetchInit } from '@helia/verified-fetch'
 import { AbortError } from '@libp2p/interface'
 import type { Libp2p } from '@libp2p/interface'
 
-const blockstore = new LevelBlockstore(join(process.cwd(), '.helia/blockstore'))
-const datastore = new LevelDatastore(join(process.cwd(), '.helia/datastore'))
-
 let helia: HeliaLibp2p<Libp2p> | undefined
 
 async function getHelia() {
-  if (helia) {
+  if (helia !== undefined) {
     return helia
   }
+
+  const blockstore = new LevelBlockstore(join(process.cwd(), '.helia/blockstore'))
+  const datastore = new LevelDatastore(join(process.cwd(), '.helia/datastore'))
 
   helia = await createHelia({
     blockstore,
