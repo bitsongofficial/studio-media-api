@@ -22,11 +22,15 @@ import { AbortError } from '@libp2p/interface'
 import type { Libp2p } from '@libp2p/interface'
 
 let helia: HeliaLibp2p<Libp2p> | undefined
+let fs: UnixFS | undefined
 
 async function getHelia() {
   if (helia !== undefined) {
+    console.log('helia already exists, returning...')
     return helia
   }
+
+  console.log('creating helia...')
 
   const blockstore = new LevelBlockstore(join(process.cwd(), '.helia/blockstore'))
   const datastore = new LevelDatastore(join(process.cwd(), '.helia/datastore'))
@@ -93,6 +97,13 @@ async function getHelia() {
 }
 
 export async function getUnixFS() {
+  if (fs !== undefined) {
+    console.log('fs already exists, returning...')
+    return fs
+  }
+
+  console.log('creating fs...')
+
   await getHelia()
   return unixfs(helia)
 }
