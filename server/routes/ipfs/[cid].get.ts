@@ -1,17 +1,14 @@
 import { CID } from 'multiformats/cid'
 import { cachedStorageData } from '~/utils/cache'
-import { getStreamFromAsyncIterable, getUnixFS } from '~/utils/helia'
+import { getStreamFromAsyncIterable } from '~/utils/helia'
 import rangeParser from 'range-parser'
 
 export default eventHandler(async (event) => {
   const cid: string = getRouterParam(event, 'cid')
   const { fs } = event.context
 
-  let type: string | undefined
-
   try {
     console.log('fetching from helia...')
-    //const fs = await getUnixFS()
     if (fs === undefined) throw new Error('fs is undefined')
 
     const data = await cachedStorageData(cid)
