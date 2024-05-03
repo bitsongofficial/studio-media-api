@@ -1,3 +1,4 @@
+import prisma from './db'
 // export const cachedStorageData = defineCachedFunction(async (cid: string) => {
 //   return await prisma.storage_ipfs.findUnique({
 //     where: {
