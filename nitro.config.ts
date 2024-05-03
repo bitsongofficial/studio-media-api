@@ -1,4 +1,7 @@
 export default defineNitroConfig({
+  hooks: {
+    //"dev:reload": async () => await import('node-datachannel'),
+  },
   srcDir: "server",
   storage: {
     mnft: {

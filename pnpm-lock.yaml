@@ -20,12 +20,6 @@ dependencies:
   '@chainsafe/libp2p-gossipsub':
     specifier: ^13.0.0
     version: 13.0.0
-  '@helia/car':
-    specifier: ^3.1.5
-    version: 3.1.5
-  '@helia/dag-cbor':
-    specifier: ^3.0.4
-    version: 3.0.4
   '@helia/unixfs':
     specifier: ^3.0.6
     version: 3.0.6
@@ -2801,17 +2795,6 @@ packages:
       multiformats: 13.1.0
       p-defer: 4.0.1
       p-queue: 8.0.1
-      progress-events: 1.0.0
-    dev: false
-
-  /@helia/dag-cbor@3.0.4:
-    resolution: {integrity: sha512-mkdyiY5dGYA+hBYdDkcFM+GKt5vrByhxuCQGMA/IKrhLSCss2T3IAQF3wyPtMb5XV19FzTNbxl61phVEmbMZ0A==}
-    dependencies:
-      '@helia/interface': 4.3.0
-      '@ipld/dag-cbor': 9.2.0
-      '@libp2p/interfaces': 3.3.2
-      interface-blockstore: 5.2.10
-      multiformats: 13.1.0
       progress-events: 1.0.0
     dev: false
 

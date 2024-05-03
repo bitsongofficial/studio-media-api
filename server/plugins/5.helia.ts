@@ -17,22 +17,18 @@ import { dcutr as dcutrService } from '@libp2p/dcutr'
 import { kadDHT } from '@libp2p/kad-dht'
 import { ping as pingService } from '@libp2p/ping'
 import { join } from 'path'
-import { dagCbor, DAGCBOR } from '@helia/dag-cbor'
-import { Car, car } from '@helia/car'
 
 declare module 'h3' {
   interface H3EventContext {
     fs: UnixFS
-    dagCb: DAGCBOR
-    c: Car
   }
 }
 
+const blockstore = new LevelBlockstore(join(process.cwd(), '.helia/blockstore'))
+const datastore = new LevelDatastore(join(process.cwd(), '.helia/datastore'))
+
 export default defineNitroPlugin(async (nitroApp) => {
   console.log('[helia] plugin loading...')
-
-  const blockstore = new LevelBlockstore(join(process.cwd(), '.helia/blockstore'))
-  const datastore = new LevelDatastore(join(process.cwd(), '.helia/datastore'))
 
   const helia = await createHelia({
     blockstore,
@@ -92,20 +88,21 @@ export default defineNitroPlugin(async (nitroApp) => {
     }
   })
 
-
   const fs = unixfs(helia)
-  const dagCb = dagCbor(helia)
+
+  await helia.start()
 
   nitroApp.hooks.hook('request', async (event) => {
     console.log('[helia] plugin request...')
 
     event.node.req.setMaxListeners(100)
     event.context.fs = fs
-    event.context.dagCb = dagCb
   })
 
   nitroApp.hooks.hook('close', async () => {
     console.log('[helia] plugin close...')
+    await blockstore.close()
+    await datastore.close()
     await helia.stop()
   })
 
