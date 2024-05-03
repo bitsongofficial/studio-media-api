@@ -29,7 +29,10 @@ async function getHelia() {
   }
 
   const blockstore = new LevelBlockstore(join(process.cwd(), '.helia/blockstore'))
+  await blockstore.open()
+
   const datastore = new LevelDatastore(join(process.cwd(), '.helia/datastore'))
+  await datastore.open()
 
   helia = await createHelia({
     blockstore,
