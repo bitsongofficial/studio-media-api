@@ -1,17 +1,5 @@
-import { TrackSchema } from '@bitsongjs/metadata'
 import { getBs721TrackInfo } from '~/utils/bitsong'
 import { z } from 'zod'
-
-interface StreamInfoResponse {
-  id: string
-  title: string
-  artist: string
-  cover: string
-  sources: {
-    audio: string
-    video?: string
-  }
-}
 
 const schema = z.object({
   ids: z.string().min(1)
