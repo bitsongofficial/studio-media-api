@@ -73,6 +73,12 @@ export async function getBs721TrackInfo(ids: string[]) {
       '$schema': nft.metadata.schema,
     }
 
+    // Force the resolution of some metadata
+    // - Fix bitsong18a0pvw326fydfdat5tzyf4t8lhz0v6fyfaujpeg07fwqkygcxejsv0vqlr metadata
+    if (nft.id === 'bitsong18a0pvw326fydfdat5tzyf4t8lhz0v6fyfaujpeg07fwqkygcxejsv0vqlr') {
+      nft.metadata.bitsong.video = nft.metadata.animationUrl
+    }
+
     return {
       id: nft.id,
       ...TrackSchema.parse(data),
