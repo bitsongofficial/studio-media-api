@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { getMediaData, validateAudioData, readForm } from '~/utils';
 import prisma from '~/utils/db'
 import { createReadStream } from 'fs';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 
 export default defineEventHandler(async (event) => {
   const user = await ensureAuth(event)
@@ -54,15 +55,23 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    await prisma.storage_ipfs.create({
-      data: {
-        id: cid.toString(),
-        owner: user.address,
-        name: _file.filepath,
-        size: size,
-        mimetype: contenType,
+    try {
+      await prisma.storage_ipfs.create({
+        data: {
+          id: cid.toString(),
+          owner: user.address,
+          name: _file.filepath,
+          size: size,
+          mimetype: contenType,
+        }
+      })
+    } catch (e) {
+      if (e instanceof PrismaClientKnownRequestError) {
+        console.error(`Prisma error: ${e.message}`)
+      } else {
+        console.error(`Something went wrong: ${e}`)
       }
-    })
+    }
     /////////////////
 
     const newTrack = await prisma.tracks.create({

@@ -1,4 +1,7 @@
 import prisma from '~/utils/db'
+import { createReadStream } from 'fs'
+import fs from 'fs'
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library'
 
 export default defineEventHandler(async (event) => {
   const user = await ensureAuth(event)
@@ -53,12 +56,49 @@ export default defineEventHandler(async (event) => {
     // - min 3000x3000px
     // - max 15000x15000px
 
-    const { path } = await storeTrackImageToS3({
+    const { path, contenType } = await storeTrackImageToS3({
       userId: user.userId,
       id: id!,
       filepath: _file.filepath,
       filename: newFilename,
     })
+
+    // get file size
+    const stat = await fs.promises.stat(_file.filepath)
+
+    /**
+     * TODO: implement IPFS storage
+     *  
+     */
+    const cid = await event.context.fs.addFile({
+      content: createReadStream(_file.filepath),
+      path: _file.filepath,
+    })
+
+    if (cid.toString() === '') {
+      throw createError({
+        statusMessage: 'Error uploading file',
+        statusCode: 500
+      })
+    }
+
+    try {
+      await prisma.storage_ipfs.create({
+        data: {
+          id: cid.toString(),
+          owner: user.address,
+          name: _file.filepath,
+          size: stat.size,
+          mimetype: contenType,
+        }
+      })
+    } catch (e) {
+      if (e instanceof PrismaClientKnownRequestError) {
+        console.error(`Prisma error: ${e.message}`)
+      } else {
+        console.error(`Something went wrong: ${e}`)
+      }
+    }
 
     return await prisma.tracks.update({
       where: {
