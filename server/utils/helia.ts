@@ -7,6 +7,7 @@ import { balanced } from 'ipfs-unixfs-importer/layout'
 import { importBytes, importByteStream, importFile, ByteStream } from 'ipfs-unixfs-importer'
 import type { ImporterOptions, ImportContent } from 'ipfs-unixfs-importer'
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library'
+import prisma from './db'
 
 // default kubo options
 const defaultKuboOptions: ImporterOptions = {
