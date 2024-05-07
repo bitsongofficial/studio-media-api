@@ -1,108 +1,55 @@
 import prisma from '~/utils/db'
 import { createReadStream } from 'fs'
-import fs from 'fs'
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library'
+import { tmpdir } from 'os';
+import { join } from 'path';
+import { mkdir, writeFile, rmdir, unlink } from 'fs/promises';
+import sharp from 'sharp';
+import { validateImageTrack } from '~/utils';
+import pinataSDK from '@pinata/sdk'
 
 export default defineEventHandler(async (event) => {
-  const user = await ensureAuth(event)
-  const id = getRouterParam(event, 'id')
+  const { user, track } = await ensureUserTrack(event)
 
-  const _track = await prisma.tracks.findUnique({
-    where: {
-      id: id!,
-      user_id: user.userId
-    }
-  })
-
-  if (!_track) {
-    throw createError({
-      message: 'Track not found',
-      status: 404
-    })
+  const form = await readFormData(event)
+  const imageForm = form.get('image')
+  if (!imageForm || imageForm === 'undefined') {
+    throw createError({ statusCode: 400, statusMessage: 'No image file uploaded' })
   }
 
-  const { files } = await readForm(event, {
-    maxFileSize: 50 * 1024 * 1024, // 50MB
-    maxFieldsSize: 0,
-    maxFields: 0,
-    maxFiles: 1,
-    keepExtensions: true,
-  })
+  const imageFile = imageForm as File
+  const imageBuffer = Buffer.from(await imageFile.arrayBuffer())
 
-  const _file = Array.isArray(files.image) ? files.image[0] : files.image
-  if (!_file || _file.originalFilename === null || _file.mimetype === null) {
-    throw createError({
-      message: 'No file',
-      status: 400
-    })
-  }
+  const tmp = join(tmpdir(), user.userId)
+  const tmpFilePath = join(tmp, imageFile.name)
 
-  if (!_file.mimetype.startsWith('image/jp')) {
-    throw createError({
-      message: 'No image file',
-      status: 400
-    })
-  }
+  await mkdir(tmp, { recursive: true })
+  await writeFile(join(tmp, imageFile.name), imageBuffer)
 
   try {
-    const fileExtension = _file.originalFilename.split('.').pop()
-    const newFilename = `artwork.${fileExtension}`
+    const imageMetadata = await sharp(tmpFilePath).metadata()
+    validateImageTrack(imageMetadata)
 
-    // TODO: add validation
-    // - file format jpg
-    // - square aspect ratio
-    // - 72dpi
-    // - RGB
-    // - min 3000x3000px
-    // - max 15000x15000px
+    // store to local IPFS
+    const cid = await addFile(event, new Uint8Array(imageBuffer), imageFile.name)
+
+    // pin to remote IPFS 
+    const pinata = new pinataSDK(useRuntimeConfig().pinata.apiKey, useRuntimeConfig().pinata.apiSecret);
+    const { IpfsHash } = await pinata.pinFileToIPFS(createReadStream(tmpFilePath), { pinataMetadata: { name: imageFile.name } })
+
+    if (cid !== IpfsHash) {
+      throw createError({ statusCode: 500, statusMessage: 'Error pinning file' })
+    }
 
     const { path, contenType } = await storeTrackImageToS3({
       userId: user.userId,
-      id: id!,
-      filepath: _file.filepath,
-      filename: newFilename,
+      id: track.id,
+      filepath: tmpFilePath,
+      filename: imageFile.name,
     })
-
-    // get file size
-    const stat = await fs.promises.stat(_file.filepath)
-
-    /**
-     * TODO: implement IPFS storage
-     *  
-     */
-    const cid = await event.context.fs.addFile({
-      content: createReadStream(_file.filepath),
-      path: _file.filepath,
-    })
-
-    if (cid.toString() === '') {
-      throw createError({
-        statusMessage: 'Error uploading file',
-        statusCode: 500
-      })
-    }
-
-    try {
-      await prisma.storage_ipfs.create({
-        data: {
-          id: cid.toString(),
-          owner: user.address,
-          name: _file.filepath,
-          size: stat.size,
-          mimetype: contenType,
-        }
-      })
-    } catch (e) {
-      if (e instanceof PrismaClientKnownRequestError) {
-        console.error(`Prisma error: ${e.message}`)
-      } else {
-        console.error(`Something went wrong: ${e}`)
-      }
-    }
 
     return await prisma.tracks.update({
       where: {
-        id: id!,
+        id: track.id,
         user_id: user.userId
       },
       data: {
@@ -113,9 +60,13 @@ export default defineEventHandler(async (event) => {
       }
     })
   } catch (e) {
+    consola.error(e)
     throw createError({
-      message: 'Error uploading file',
-      status: 500
+      statusMessage: `Error uploading artwork, ${(e as Error).message}`,
+      statusCode: 500
     })
+  } finally {
+    await unlink(tmpFilePath)
+    await rmdir(tmp)
   }
 })

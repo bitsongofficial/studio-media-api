@@ -1,5 +1,59 @@
+import type { H3Event } from 'h3'
 import type { VerifiedFetchInit } from '@helia/verified-fetch'
 import { AbortError } from '@libp2p/interface'
+import { fileTypeFromBuffer, fileTypeFromStream, fileTypeFromBlob } from 'file-type'
+import { fixedSize } from 'ipfs-unixfs-importer/chunker'
+import { balanced } from 'ipfs-unixfs-importer/layout'
+import { importBytes, importByteStream, importFile, ByteStream } from 'ipfs-unixfs-importer'
+import type { ImporterOptions, ImportContent } from 'ipfs-unixfs-importer'
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library'
+
+// default kubo options
+const defaultKuboOptions: ImporterOptions = {
+  cidVersion: 0,
+  rawLeaves: false,
+  layout: balanced({
+    maxChildrenPerNode: 174
+  }),
+  chunker: fixedSize({
+    chunkSize: 262144 // 256KB
+  })
+}
+
+export async function addFile(event: H3Event, body: Uint8Array, name: string) {
+  const { cid, size } = await importFile({ path: name, content: body }, event.context.blockstore, defaultKuboOptions)
+  const mimetype = (await fileTypeFromBuffer(body))?.mime
+
+  const cidV0 = cid.toV0().toString()
+
+  if (cidV0 === '' || cidV0 === undefined || cidV0 === 'undefined') {
+    throw new Error('Error uploading file')
+  }
+
+  try {
+    await prisma.storage_ipfs.upsert({
+      create: {
+        id: cidV0,
+        owner: "",
+        name,
+        size: Number(size.toString()),
+        mimetype
+      },
+      update: {},
+      where: {
+        id: cidV0
+      },
+    })
+  } catch (error) {
+    if (error instanceof PrismaClientKnownRequestError) {
+      console.error(`Prisma error: ${error.message}`)
+    } else {
+      throw new Error(`Error adding file to database: ${error.message}`)
+    }
+  }
+
+  return cidV0
+}
 
 // taken from https://github.com/ipfs/helia-verified-fetch/blob/main/packages/verified-fetch/src/utils/get-stream-from-async-iterable.ts
 export async function getStreamFromAsyncIterable(

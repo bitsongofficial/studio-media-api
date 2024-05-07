@@ -1,7 +1,8 @@
 import { H3Event } from 'h3'
 import ffmpeg, { FfprobeData } from 'fluent-ffmpeg'
 import prisma from './db'
-import * as stream from "stream";
+import { Metadata } from 'sharp'
+import { Readable } from 'stream'
 
 export async function ensureUserTrack(event: H3Event) {
   const user = await ensureAuth(event)
@@ -40,7 +41,7 @@ export async function ensureUserTrack(event: H3Event) {
   }
 }
 
-export function getMediaData(filePath: string | stream.Readable): Promise<FfprobeData> {
+export function getMediaData(filePath: string | Readable): Promise<FfprobeData> {
   return new Promise((resolve, reject) => {
     ffmpeg()
       .input(filePath)
@@ -122,4 +123,43 @@ export function validateAudioData(data: FfprobeData) {
       status: 400
     })
   }
+}
+
+export function validateImageTrack(metadata: Metadata) {
+  if (metadata.format !== 'jpeg') {
+    throw createError({
+      statusMessage: 'Image must be a JPEG',
+      statusCode: 400
+    })
+  }
+
+  if (metadata.width !== metadata.height) {
+    throw createError({
+      statusMessage: 'Image must be square',
+      statusCode: 400
+    })
+  }
+
+  if (metadata.width < 500 || metadata.height < 500) {
+    throw createError({
+      statusMessage: 'Image must be at least 500x500px',
+      statusCode: 400
+    })
+  }
+
+  if (metadata.width > 15000 || metadata.height > 15000) {
+    throw createError({
+      statusMessage: 'Image must be at most 15000x15000px',
+      statusCode: 400
+    })
+  }
+
+  if (metadata.channels !== 3) {
+    throw createError({
+      statusMessage: 'Image must be RGB',
+      statusCode: 400
+    })
+  }
+
+  // TODO: image should be 72dpi
 }

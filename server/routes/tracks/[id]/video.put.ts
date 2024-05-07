@@ -1,99 +1,55 @@
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library'
 import prisma from '~/utils/db'
 import { createReadStream } from 'fs'
+import { tmpdir } from 'os';
+import { join } from 'path';
+import { mkdir, writeFile, rmdir, unlink } from 'fs/promises';
+import pinataSDK from '@pinata/sdk'
 
 export default defineEventHandler(async (event) => {
-  const user = await ensureAuth(event)
-  const id = getRouterParam(event, 'id')
+  const { user, track } = await ensureUserTrack(event)
 
-  const _track = await prisma.tracks.findUnique({
-    where: {
-      id: id!,
-      user_id: user.userId
-    }
-  })
-
-  if (!_track) {
-    throw createError({
-      message: 'Track not found',
-      status: 404
-    })
+  const form = await readFormData(event)
+  const videoForm = form.get('video')
+  if (!videoForm || videoForm === 'undefined') {
+    throw createError({ statusCode: 400, statusMessage: 'No video file uploaded' })
   }
 
-  const { files } = await readForm(event, {
-    maxFileSize: 300 * 1024 * 1024, // 300MB
-    maxFieldsSize: 0,
-    maxFields: 0,
-    maxFiles: 1,
-    keepExtensions: true,
-  })
+  const videoFile = videoForm as File
+  const videoBuffer = Buffer.from(await videoFile.arrayBuffer())
 
-  const _file = Array.isArray(files.video) ? files.video[0] : files.video
-  if (!_file || _file.originalFilename === null || _file.mimetype === null) {
-    throw createError({
-      message: 'No file',
-      status: 400
-    })
-  }
+  const tmp = join(tmpdir(), user.userId)
+  const tmpFilePath = join(tmp, videoFile.name)
 
-  if (!_file.mimetype.startsWith('video/')) {
-    throw createError({
-      message: 'No video file',
-      status: 400
-    })
-  }
+  await mkdir(tmp, { recursive: true })
+  await writeFile(join(tmp, videoFile.name), videoBuffer)
 
   try {
-    const videoData = await getMediaData(_file.filepath)
-    const { format_name, duration, size, bit_rate } = videoData.format
+    const videoData = await getMediaData(tmpFilePath)
+    // TODO: validate video data ???
 
-    const fileExtension = _file.originalFilename.split('.').pop()
-    const newFilename = `video.${fileExtension}`
+    // store to local IPFS
+    const cid = await addFile(event, new Uint8Array(videoBuffer), videoFile.name)
+
+    // pin to remote IPFS 
+    const pinata = new pinataSDK(useRuntimeConfig().pinata.apiKey, useRuntimeConfig().pinata.apiSecret);
+    const { IpfsHash } = await pinata.pinFileToIPFS(createReadStream(tmpFilePath), { pinataMetadata: { name: videoFile.name } })
+
+    if (cid !== IpfsHash) {
+      throw createError({ statusCode: 500, statusMessage: 'Error pinning file' })
+    }
+
+    const { format_name, duration, size, bit_rate } = videoData.format
 
     const { contenType, path } = await storeTrackVideoToS3({
       userId: user.userId,
-      id: id!,
-      filepath: _file.filepath,
-      filename: newFilename,
+      id: track.id,
+      filepath: tmpFilePath,
+      filename: videoFile.name,
     })
 
-    /**
-     * TODO: implement IPFS storage
-     *  
-     */
-    const cid = await event.context.fs.addFile({
-      content: createReadStream(_file.filepath),
-      path: _file.filepath,
-    })
-
-    if (cid.toString() === '') {
-      throw createError({
-        statusMessage: 'Error uploading file',
-        statusCode: 500
-      })
-    }
-
-    try {
-      await prisma.storage_ipfs.create({
-        data: {
-          id: cid.toString(),
-          owner: user.address,
-          name: _file.filepath,
-          size: size,
-          mimetype: contenType,
-        }
-      })
-    } catch (e) {
-      if (e instanceof PrismaClientKnownRequestError) {
-        console.error(`Prisma error: ${e.message}`)
-      } else {
-        console.error(`Something went wrong: ${e}`)
-      }
-    }
-
-    const track = await prisma.tracks.update({
+    const trackRecord = await prisma.tracks.update({
       where: {
-        id: id!,
+        id: track.id,
         user_id: user.userId,
       },
       data: {
@@ -106,12 +62,15 @@ export default defineEventHandler(async (event) => {
       }
     })
 
-    return track
+    return trackRecord
   } catch (e) {
-    console.log(e)
+    consola.error(e)
     throw createError({
-      message: 'Error uploading file',
-      status: 500
+      statusMessage: `Error uploading video, ${(e as Error).message}`,
+      statusCode: 500
     })
+  } finally {
+    await unlink(tmpFilePath)
+    await rmdir(tmp)
   }
 })

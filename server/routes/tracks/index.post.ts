@@ -1,84 +1,64 @@
 import { v4 as uuidv4 } from 'uuid';
-import { getMediaData, validateAudioData, readForm } from '~/utils';
+import { getMediaData, validateAudioData } from '~/utils';
 import prisma from '~/utils/db'
-import { createReadStream } from 'fs';
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
+import { tmpdir } from 'os';
+import { join } from 'path';
+import { mkdir, writeFile, rmdir, unlink } from 'fs/promises';
+import pinataSDK from '@pinata/sdk'
+import { createReadStream } from 'fs'
 
 export default defineEventHandler(async (event) => {
   const user = await ensureAuth(event)
-  if (!user.canUpload) throw createError({ status: 403, message: "Unauthorized" })
-
-  const { files } = await readForm(event, {
-    maxFileSize: 300 * 1024 * 1024, // 300M
-    maxFieldsSize: 0,
-    maxFields: 0,
-    maxFiles: 1,
-    keepExtensions: true,
-  })
-
-  const _file = Array.isArray(files.audio) ? files.audio[0] : files.audio
-  if (!_file || _file.originalFilename === null || _file.mimetype === null) {
-    throw createError({
-      message: 'No file',
-      status: 400
-    })
+  if (!user.canUpload) {
+    throw createError({ statusCode: 403, statusMessage: "Unauthorized" })
   }
 
-  try {
-    const audio = await getMediaData(_file.filepath)
-    const { format_name, duration, size } = audio.format
-    validateAudioData(audio)
+  const form = await readFormData(event)
+  const audioForm = form.get('audio')
+  if (!audioForm || audioForm === 'undefined') {
+    throw createError({ statusCode: 400, statusMessage: 'No audio file uploaded' })
+  }
 
-    const id = uuidv4()
-    const newFilename = `audio.${format_name}`
+  const audioFile = audioForm as File
+  const audioBuffer = Buffer.from(await audioFile.arrayBuffer())
+
+  const tmp = join(tmpdir(), user.userId)
+  const tmpFilePath = join(tmp, audioFile.name)
+
+  await mkdir(tmp, { recursive: true })
+  await writeFile(join(tmp, audioFile.name), audioBuffer)
+
+  try {
+    const audioData = await getMediaData(tmpFilePath)
+    validateAudioData(audioData)
+
+    const trackId = uuidv4()
+
+    // store to local IPFS
+    const cid = await addFile(event, new Uint8Array(audioBuffer), audioFile.name)
+
+    // pin to remote IPFS 
+    const pinata = new pinataSDK(useRuntimeConfig().pinata.apiKey, useRuntimeConfig().pinata.apiSecret);
+    const { IpfsHash } = await pinata.pinFileToIPFS(createReadStream(tmpFilePath), { pinataMetadata: { name: audioFile.name } })
+
+    if (cid !== IpfsHash) {
+      throw createError({ statusCode: 500, statusMessage: 'Error pinning file' })
+    }
 
     const { contenType, path } = await storeTrackToS3({
       userId: user.userId,
-      id,
-      filepath: _file.filepath,
-      filename: newFilename,
+      id: trackId,
+      filepath: tmpFilePath,
+      filename: audioFile.name,
     })
 
-    /**
-     * TODO: implement IPFS storage
-     *  
-     */
-    const cid = await event.context.fs.addFile({
-      content: createReadStream(_file.filepath),
-      path: _file.filepath,
-    })
-
-    if (cid.toString() === '') {
-      throw createError({
-        statusMessage: 'Error uploading file',
-        statusCode: 500
-      })
-    }
-
-    try {
-      await prisma.storage_ipfs.create({
-        data: {
-          id: cid.toString(),
-          owner: user.address,
-          name: _file.filepath,
-          size: size,
-          mimetype: contenType,
-        }
-      })
-    } catch (e) {
-      if (e instanceof PrismaClientKnownRequestError) {
-        console.error(`Prisma error: ${e.message}`)
-      } else {
-        console.error(`Something went wrong: ${e}`)
-      }
-    }
-    /////////////////
-
+    const { format_name, duration, size } = audioData.format
     const newTrack = await prisma.tracks.create({
       data: {
-        id,
+        id: trackId,
         user_id: user.userId,
         audio: path,
+        audio_ipfs_cid: cid,
         audio_mime_type: contenType,
         format: format_name,
         duration: Math.round(duration! * 1000),
@@ -90,11 +70,13 @@ export default defineEventHandler(async (event) => {
       id: newTrack.id
     }
   } catch (e) {
-    console.error((e as Error).message)
-
+    consola.error(e)
     throw createError({
-      message: `Error processing file ${(e as Error).message}`,
-      status: 500
+      statusMessage: `Error uploading audio file, ${(e as Error).message}`,
+      statusCode: 500
     })
+  } finally {
+    await unlink(tmpFilePath)
+    await rmdir(tmp)
   }
 })

@@ -21,6 +21,7 @@ import { join } from 'path'
 declare module 'h3' {
   interface H3EventContext {
     fs: UnixFS
+    blockstore: LevelBlockstore
   }
 }
 
@@ -90,13 +91,12 @@ export default defineNitroPlugin(async (nitroApp) => {
 
   const fs = unixfs(helia)
 
-  //await helia.start()
-
   nitroApp.hooks.hook('request', async (event) => {
     console.log('[helia] plugin request...')
 
     event.node.req.setMaxListeners(100)
     event.context.fs = fs
+    event.context.blockstore = blockstore
   })
 
   nitroApp.hooks.hook('close', async () => {
