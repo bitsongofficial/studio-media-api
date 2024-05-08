@@ -28,7 +28,11 @@ export default defineEventHandler(async (event) => {
       await writeFile(join(tmp, file.name), fileBuffer)
 
       const data = await getMediaData(tmpFilePath)
-      validateAudioData(data)
+      validateAudioData(data, {
+        maxDuration: 3 * 60 * 60, // 3 hours
+        maxSize: 300 * 1024 * 1024, // 300 MB,
+        allowedFormats: ['wav', 'mp3', 'flac', 'ogg']
+      })
 
       // store to local IPFS
       const cid = await addFile(event, new Uint8Array(fileBuffer), file.name, { storeOnDb: false })

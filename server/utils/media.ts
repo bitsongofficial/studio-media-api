@@ -93,7 +93,18 @@ export function generateMp3_128k(inputPath: string, outputPath: string) {
   })
 }
 
-export function validateAudioData(data: FfprobeData) {
+interface ValidateAudioDataOptions {
+  maxDuration?: number
+  maxSize?: number
+  allowedFormats?: string[]
+}
+
+export function validateAudioData(data: FfprobeData, options: ValidateAudioDataOptions = {
+  maxDuration: 600,
+  maxSize: 300 * 1024 * 1024,
+  allowedFormats: ['wav', 'mp3']
+}) {
+  consola.box(data)
   const { format_name, duration, size } = data.format
 
   if (!format_name || !duration || !size) {
@@ -103,21 +114,30 @@ export function validateAudioData(data: FfprobeData) {
     })
   }
 
-  if (format_name !== 'wav' && format_name !== 'mp3') {
+  consola.info(`Audio format: ${format_name}, duration: ${duration}, size: ${size}`)
+
+  if (!options.allowedFormats.includes(format_name)) {
     throw createError({
       message: 'Invalid audio format',
       status: 400
     })
   }
 
-  if (duration > 600) {
+  if (duration.toString() === 'N/A') {
+    throw createError({
+      message: 'Invalid duration',
+      status: 400
+    })
+  }
+
+  if (duration > options.maxDuration) {
     throw createError({
       message: 'Audio file too long, max 10 minutes',
       status: 400
     })
   }
 
-  if (size > 300 * 1024 * 1024) {
+  if (size > options.maxSize) {
     throw createError({
       message: 'Audio file too large, max 300MB',
       status: 400
