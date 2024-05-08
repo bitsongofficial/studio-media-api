@@ -21,7 +21,11 @@ const defaultKuboOptions: ImporterOptions = {
   })
 }
 
-export async function addFile(event: H3Event, body: Uint8Array, name: string) {
+interface AddFileOptions {
+  storeOnDb: boolean
+}
+
+export async function addFile(event: H3Event, body: Uint8Array, name: string, options: AddFileOptions = { storeOnDb: true }): Promise<string> {
   const { cid, size } = await importFile({ path: name, content: body }, event.context.blockstore, defaultKuboOptions)
   const mimetype = (await fileTypeFromBuffer(body))?.mime
 
@@ -31,25 +35,27 @@ export async function addFile(event: H3Event, body: Uint8Array, name: string) {
     throw new Error('Error uploading file')
   }
 
-  try {
-    await prisma.storage_ipfs.upsert({
-      create: {
-        id: cidV0,
-        owner: "",
-        name,
-        size: Number(size.toString()),
-        mimetype
-      },
-      update: {},
-      where: {
-        id: cidV0
-      },
-    })
-  } catch (error) {
-    if (error instanceof PrismaClientKnownRequestError) {
-      console.error(`Prisma error: ${error.message}`)
-    } else {
-      throw new Error(`Error adding file to database: ${error.message}`)
+  if (options.storeOnDb) {
+    try {
+      await prisma.storage_ipfs.upsert({
+        create: {
+          id: cidV0,
+          owner: "",
+          name,
+          size: Number(size.toString()),
+          mimetype
+        },
+        update: {},
+        where: {
+          id: cidV0
+        },
+      })
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        console.error(`Prisma error: ${error.message}`)
+      } else {
+        throw new Error(`Error adding file to database: ${error.message}`)
+      }
     }
   }
 
