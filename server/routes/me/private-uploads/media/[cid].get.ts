@@ -4,7 +4,7 @@ import rangeParser from 'range-parser'
 import prisma from '~/utils/db';
 
 export default eventHandler(async (event) => {
-  const user = await ensureAuth(event)
+  //const user = await ensureAuth(event)
   const cid: string = getRouterParam(event, 'cid')
   const { fs } = event.context
 
@@ -16,7 +16,7 @@ export default eventHandler(async (event) => {
       where: {
         AND: {
           audio_cid: cid,
-          user_id: user.userId
+          //user_id: user.userId
         }
       }
     })
