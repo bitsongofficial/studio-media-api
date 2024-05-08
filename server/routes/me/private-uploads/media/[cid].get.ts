@@ -1,6 +1,7 @@
 import { CID } from 'multiformats/cid'
 import { getStreamFromAsyncIterable } from '~/utils/helia'
 import rangeParser from 'range-parser'
+import prisma from '~/utils/db';
 
 export default eventHandler(async (event) => {
   const user = await ensureAuth(event)

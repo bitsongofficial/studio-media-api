@@ -1,8 +1,5 @@
 import prisma from "~/utils/db"
 import { z } from "zod"
-import pinataSDK from '@pinata/sdk'
-import { CID } from 'multiformats/cid'
-import { Key } from 'interface-datastore'
 
 const schema = z.object({
   ids: z.array(z.string().min(1)).min(1)

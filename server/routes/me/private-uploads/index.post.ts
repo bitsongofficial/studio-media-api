@@ -1,10 +1,9 @@
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { mkdir, writeFile, rm, unlink } from 'fs/promises';
-import { createReadStream } from 'fs'
 import { fileTypeFromBuffer } from 'file-type';
 import { nanoid } from 'nanoid';
-import pinataSDK from '@pinata/sdk'
+import prisma from '~/utils/db';
 
 export default defineEventHandler(async (event) => {
   const user = await ensureAuth(event)
