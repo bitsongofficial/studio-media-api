@@ -22,6 +22,7 @@ declare module 'h3' {
   interface H3EventContext {
     fs: UnixFS
     blockstore: LevelBlockstore
+    datastore: LevelDatastore
   }
 }
 
@@ -97,6 +98,7 @@ export default defineNitroPlugin(async (nitroApp) => {
     event.node.req.setMaxListeners(100)
     event.context.fs = fs
     event.context.blockstore = blockstore
+    event.context.datastore = datastore
   })
 
   nitroApp.hooks.hook('close', async () => {

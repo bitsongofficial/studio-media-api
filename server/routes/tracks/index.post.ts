@@ -3,7 +3,7 @@ import { getMediaData, validateAudioData } from '~/utils';
 import prisma from '~/utils/db'
 import { tmpdir } from 'os';
 import { join } from 'path';
-import { mkdir, writeFile, rmdir, unlink } from 'fs/promises';
+import { mkdir, writeFile, unlink, rm } from 'fs/promises';
 import pinataSDK from '@pinata/sdk'
 import { createReadStream } from 'fs'
 
@@ -77,6 +77,6 @@ export default defineEventHandler(async (event) => {
     })
   } finally {
     await unlink(tmpFilePath)
-    await rmdir(tmp)
+    await rm(tmp)
   }
 })
