@@ -2,6 +2,7 @@ import { CID } from 'multiformats/cid'
 import { cachedStorageData } from '~/utils/cache'
 import { getStreamFromAsyncIterable } from '~/utils/helia'
 import rangeParser from 'range-parser'
+import prisma from '~/utils/db'
 
 export default eventHandler(async (event) => {
   const cid: string = getRouterParam(event, 'cid')
@@ -11,7 +12,12 @@ export default eventHandler(async (event) => {
     console.log('fetching from helia...')
     if (fs === undefined) throw new Error('fs is undefined')
 
-    const data = await cachedStorageData(cid)
+    //const data = await cachedStorageData(cid)
+    const data = await prisma.storage_ipfs.findUnique({
+      where: {
+        id: cid
+      }
+    })
     if (data === null) throw createError({
       statusCode: 404,
       statusMessage: 'Not Found',
