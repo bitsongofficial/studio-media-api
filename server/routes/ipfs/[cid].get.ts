@@ -3,14 +3,17 @@ import { cachedStorageData } from '~/utils/cache'
 import { getStreamFromAsyncIterable } from '~/utils/helia'
 import rangeParser from 'range-parser'
 import prisma from '~/utils/db'
+import { multiaddr } from '@multiformats/multiaddr'
 
 export default eventHandler(async (event) => {
   const cid: string = getRouterParam(event, 'cid')
-  const { fs } = event.context
+  const { fs, helia } = event.context
 
   try {
     console.log('fetching from helia...')
     if (fs === undefined) throw new Error('fs is undefined')
+
+    await helia.libp2p.dial(multiaddr('/ip4/142.132.157.177/tcp/4001/p2p/12D3KooWKDSWRYh52EstzT2ooLBkCAQBbraHLqtPbFX8Qsi13gVN'))
 
     //const data = await cachedStorageData(cid)
     const data = await prisma.storage_ipfs.findUnique({

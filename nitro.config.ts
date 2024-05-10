@@ -1,6 +1,9 @@
 export default defineNitroConfig({
   hooks: {
-    //"dev:reload": async () => await import('node-datachannel'),
+    "dev:reload": async () => {
+      console.log("Reloading...")
+      await require('./node_modules/.pnpm/node-datachannel@0.8.0/node_modules/node-datachannel/build/Release/node_datachannel.node')
+    }
   },
   imports: {
     autoImport: true

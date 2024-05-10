@@ -26,7 +26,8 @@ interface AddFileOptions {
 }
 
 export async function addFile(event: H3Event, body: Uint8Array, name: string, options: AddFileOptions = { storeOnDb: true }): Promise<string> {
-  const { cid, size } = await importFile({ path: name, content: body }, event.context.blockstore, defaultKuboOptions)
+  const { blockstore } = event.context.helia
+  const { cid, size } = await importFile({ path: name, content: body }, blockstore, defaultKuboOptions)
   const mimetype = (await fileTypeFromBuffer(body))?.mime
 
   const cidV0 = cid.toV0().toString()
