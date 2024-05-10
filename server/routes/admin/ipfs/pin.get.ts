@@ -22,11 +22,11 @@ export default defineEventHandler(async (event) => {
   for (const pin of list.rows) {
     consola.info(`pinning: ${pin.ipfs_pin_hash}`)
 
-    const response = await $fetch(`http://142.132.157.177:9097/pins`, {
+    const response = await $fetch(``, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJJdGhhMnJhaDB3YWV5b2gifQ.tKl2Mp4WDzdCu64xx8TzyNlmZcsneKxQxhNWzmEIaaI`
+        'Authorization': ``
       },
       body: {
         cid: pin.ipfs_pin_hash
@@ -50,11 +50,11 @@ export default defineEventHandler(async (event) => {
   //   console.log(`cid ${cid} pinned`)
   // }
 
-  const pinResult = await $fetch(`http://142.132.157.177:9097/pins`, {
+  const pinResult = await $fetch(``, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJJdGhhMnJhaDB3YWV5b2gifQ.tKl2Mp4WDzdCu64xx8TzyNlmZcsneKxQxhNWzmEIaaI`
+      'Authorization': ``
     },
     body: {
       cid
