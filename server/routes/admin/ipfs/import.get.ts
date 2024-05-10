@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { fileTypeFromBuffer } from "file-type"
 import { fixedSize } from 'ipfs-unixfs-importer/chunker'
 import { balanced } from 'ipfs-unixfs-importer/layout'
+import prisma from '~/utils/db'
 
 const schema = z.object({
   cid: z.string().min(1)
