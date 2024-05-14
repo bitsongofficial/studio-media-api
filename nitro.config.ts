@@ -19,7 +19,7 @@ export default defineNitroConfig({
       pinningJwt: "",
     },
     pinata: {
-      enable: false,
+      enable: true,
       apiKey: "",
       apiSecret: "",
     },
