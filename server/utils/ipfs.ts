@@ -57,7 +57,13 @@ export function useIpfs() {
               }
             }
           },
-          update: {},
+          update: {
+            owners: {
+              create: {
+                owner
+              }
+            }
+          },
         })
       }
 
@@ -75,6 +81,62 @@ export function useIpfs() {
       }
 
       return { cid: cidV0, size, }
+    },
+    async del(cid: string, owner: string) {
+      // Query the DB to see if there are any other owners
+      const record = await prisma.storage_ipfs.findUnique({
+        where: {
+          id: cid
+        },
+        include: {
+          owners: true
+        }
+      })
+
+      // If the record is not found, throw an error
+      if (!record) {
+        throw new Error('Record not found')
+      }
+
+      // If there are no other owners, delete the record from the DB (storage_ipfs and storage_ipfs_owners) and unpin from IPFS
+      if (record.owners.length === 1) {
+        await prisma.storage_ipfs_owners.delete({
+          where: {
+            ipfs_id_owner: {
+              ipfs_id: cid,
+              owner
+            }
+          }
+        })
+
+        await prisma.storage_ipfs.delete({
+          where: {
+            id: cid
+          }
+        })
+
+        const { pinningServer, pinningJwt } = useRuntimeConfig().ipfs
+        return await $fetch(`${pinningServer}/pins/${cid}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${pinningJwt}`
+          }
+        })
+      }
+      // If there are other owners, remove the owner from the storage_ipfs_owners table
+      else {
+        await prisma.storage_ipfs_owners.delete({
+          where: {
+            ipfs_id_owner: {
+              ipfs_id: cid,
+              owner
+            }
+          }
+        })
+      }
+
+      return true
     },
     async pin(cid: string) {
       const { pinningServer, pinningJwt } = useRuntimeConfig().ipfs
