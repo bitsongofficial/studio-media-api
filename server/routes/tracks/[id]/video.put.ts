@@ -2,7 +2,7 @@ import prisma from '~/utils/db'
 import { createReadStream } from 'fs'
 import { tmpdir } from 'os';
 import { join } from 'path';
-import { mkdir, writeFile, rmdir, unlink } from 'fs/promises';
+import { mkdir, writeFile, rm } from 'fs/promises';
 import pinataSDK from '@pinata/sdk'
 
 export default defineEventHandler(async (event) => {
@@ -28,15 +28,7 @@ export default defineEventHandler(async (event) => {
     // TODO: validate video data ???
 
     // store to local IPFS
-    const cid = await addFile(event, new Uint8Array(videoBuffer), videoFile.name)
-
-    // pin to remote IPFS 
-    const pinata = new pinataSDK(useRuntimeConfig().pinata.apiKey, useRuntimeConfig().pinata.apiSecret);
-    const { IpfsHash } = await pinata.pinFileToIPFS(createReadStream(tmpFilePath), { pinataMetadata: { name: videoFile.name } })
-
-    if (cid !== IpfsHash) {
-      throw createError({ statusCode: 500, statusMessage: 'Error pinning file' })
-    }
+    const { cid } = await useIpfs().put(videoFile.name, createReadStream(tmpFilePath), user.address)
 
     const { format_name, duration, size, bit_rate } = videoData.format
 
@@ -70,7 +62,6 @@ export default defineEventHandler(async (event) => {
       statusCode: 500
     })
   } finally {
-    await unlink(tmpFilePath)
-    await rmdir(tmp)
+    await rm(tmp, { recursive: true, force: true })
   }
 })

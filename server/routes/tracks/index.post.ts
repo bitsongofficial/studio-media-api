@@ -22,11 +22,11 @@ export default defineEventHandler(async (event) => {
   const audioFile = audioForm as File
   const audioBuffer = Buffer.from(await audioFile.arrayBuffer())
 
-  const tmp = join(tmpdir(), user.userId)
-  const tmpFilePath = join(tmp, audioFile.name)
+  const tmpDir = join(tmpdir(), user.userId)
+  const tmpFilePath = join(tmpDir, audioFile.name)
 
-  await mkdir(tmp, { recursive: true })
-  await writeFile(join(tmp, audioFile.name), audioBuffer)
+  await mkdir(tmpDir, { recursive: true })
+  await writeFile(join(tmpDir, audioFile.name), audioBuffer)
 
   try {
     const audioData = await getMediaData(tmpFilePath)
@@ -35,15 +35,7 @@ export default defineEventHandler(async (event) => {
     const trackId = uuidv4()
 
     // store to local IPFS
-    const cid = await addFile(event, new Uint8Array(audioBuffer), audioFile.name)
-
-    // pin to remote IPFS 
-    const pinata = new pinataSDK(useRuntimeConfig().pinata.apiKey, useRuntimeConfig().pinata.apiSecret);
-    const { IpfsHash } = await pinata.pinFileToIPFS(createReadStream(tmpFilePath), { pinataMetadata: { name: audioFile.name } })
-
-    if (cid !== IpfsHash) {
-      throw createError({ statusCode: 500, statusMessage: 'Error pinning file' })
-    }
+    const { cid } = await useIpfs().put(audioFile.name, createReadStream(tmpFilePath), user.address)
 
     const { contenType, path } = await storeTrackToS3({
       userId: user.userId,
@@ -76,7 +68,6 @@ export default defineEventHandler(async (event) => {
       statusCode: 500
     })
   } finally {
-    await unlink(tmpFilePath)
-    await rm(tmp)
+    await rm(tmpDir, { recursive: true, force: true })
   }
 })

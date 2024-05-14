@@ -7,7 +7,7 @@ export const cachedStorageData = defineCachedFunction(async (cid: string) => {
     }
   })
 }, {
-  maxAge: 7 * 24 * 60 * 60, // 7 days
+  maxAge: 1000 * 60 * 60, // 60 minutes
   name: 'storage_ipfs',
   getKey: (cid: string) => cid,
 })

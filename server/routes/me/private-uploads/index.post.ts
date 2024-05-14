@@ -4,9 +4,13 @@ import { mkdir, writeFile, rm, unlink } from 'fs/promises';
 import { fileTypeFromBuffer } from 'file-type';
 import { nanoid } from 'nanoid';
 import prisma from '~/utils/db';
+import { createReadStream } from 'fs';
 
 export default defineEventHandler(async (event) => {
   const user = await ensureAuth(event)
+  if (!user.canPrivateUploads) {
+    throw createError({ statusCode: 403, statusMessage: "Unauthorized" })
+  }
 
   const form = await readFormData(event)
 
@@ -35,7 +39,7 @@ export default defineEventHandler(async (event) => {
       })
 
       // store to local IPFS
-      const cid = await addFile(event, new Uint8Array(fileBuffer), file.name, { storeOnDb: false })
+      const { cid } = await useIpfs().put(file.name, createReadStream(tmpFilePath), user.address)
       consola.info(`Uploaded to IPFS: ${cid}`)
 
       const fileType = await fileTypeFromBuffer(fileBuffer);
@@ -58,7 +62,6 @@ export default defineEventHandler(async (event) => {
     } catch (e) {
       throw createError({ statusCode: 400, statusMessage: `Error uploading file: ${e.message}` })
     } finally {
-      await unlink(tmpFilePath)
       await rm(tmp, { recursive: true })
     }
   }

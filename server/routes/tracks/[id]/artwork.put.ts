@@ -2,7 +2,7 @@ import prisma from '~/utils/db'
 import { createReadStream } from 'fs'
 import { tmpdir } from 'os';
 import { join } from 'path';
-import { mkdir, writeFile, rmdir, unlink } from 'fs/promises';
+import { mkdir, writeFile, rm } from 'fs/promises';
 import sharp from 'sharp';
 import { validateImageTrack } from '~/utils';
 import pinataSDK from '@pinata/sdk'
@@ -30,15 +30,7 @@ export default defineEventHandler(async (event) => {
     validateImageTrack(imageMetadata)
 
     // store to local IPFS
-    const cid = await addFile(event, new Uint8Array(imageBuffer), imageFile.name)
-
-    // pin to remote IPFS 
-    const pinata = new pinataSDK(useRuntimeConfig().pinata.apiKey, useRuntimeConfig().pinata.apiSecret);
-    const { IpfsHash } = await pinata.pinFileToIPFS(createReadStream(tmpFilePath), { pinataMetadata: { name: imageFile.name } })
-
-    if (cid !== IpfsHash) {
-      throw createError({ statusCode: 500, statusMessage: 'Error pinning file' })
-    }
+    const { cid } = await useIpfs().put(imageFile.name, createReadStream(tmpFilePath), user.address)
 
     const { path, contenType } = await storeTrackImageToS3({
       userId: user.userId,
@@ -66,7 +58,6 @@ export default defineEventHandler(async (event) => {
       statusCode: 500
     })
   } finally {
-    await unlink(tmpFilePath)
-    await rmdir(tmp)
+    await rm(tmp, { recursive: true, force: true })
   }
 })
