@@ -56,7 +56,7 @@ export default defineEventHandler(async (event) => {
           address: artist.address?.trim(),
           role: artist.role?.trim(),
         })),
-        skipDuplicates: true,
+        //skipDuplicates: true,
       })
     }
 
@@ -75,7 +75,7 @@ export default defineEventHandler(async (event) => {
           address: author_publisher.address?.trim(),
           role: author_publisher.role?.trim(),
         })),
-        skipDuplicates: true,
+        //skipDuplicates: true,
       })
     }
 
@@ -94,7 +94,7 @@ export default defineEventHandler(async (event) => {
           role: royalties_info.role?.trim(),
           shares: royalties_info.shares,
         })),
-        skipDuplicates: true,
+        //skipDuplicates: true,
       })
     }
 
