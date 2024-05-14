@@ -1,10 +1,8 @@
-import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { toCountry, toExplicit, toLicense, toMarkdown, toTrackGenre, trackMetadata } from "@bitsongjs/metadata";
-import pinataSDK from '@pinata/sdk'
 import prisma from '~/utils/db'
 
 export default defineEventHandler(async (event) => {
-  const { track } = await ensureUserTrack(event)
+  const { track, user } = await ensureUserTrack(event)
 
   if (!track.artwork && !track.audio) {
     throw createError({
@@ -21,44 +19,6 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    const pinata = new pinataSDK(
-      useRuntimeConfig().pinata.apiKey,
-      useRuntimeConfig().pinata.apiSecret
-    );
-
-    const artwork = await getS3Client().send(new GetObjectCommand({
-      Bucket: useRuntimeConfig().s3.bucket,
-      Key: `${track.artwork}`,
-    }));
-
-    const { IpfsHash: artworkCid } = await pinata.pinFileToIPFS(artwork.Body, { pinataMetadata: { name: `track_artwork_${track.id}.jpg` } })
-    console.log('-----> artworkCid', artworkCid)
-
-    const audio = await getS3Client().send(new GetObjectCommand({
-      Bucket: useRuntimeConfig().s3.bucket,
-      Key: `${track.audio}`,
-    }));
-
-    const audioExtension = track.audio!.split('.').pop()
-
-    const { IpfsHash: audioCid } = await pinata.pinFileToIPFS(audio.Body, { pinataMetadata: { name: `track_audio_${track.id}.${audioExtension}` } })
-    console.log('-----> audioCid', audioCid)
-
-    let videoCid;
-    if (track.video) {
-      const video = await getS3Client().send(new GetObjectCommand({
-        Bucket: useRuntimeConfig().s3.bucket,
-        Key: `${track.video}`,
-      }));
-
-      const videoExtension = track.video!.split('.').pop()
-
-      const { IpfsHash } = await pinata.pinFileToIPFS(video.Body, { pinataMetadata: { name: `track_video_${track.id}.${videoExtension}` } })
-      videoCid = IpfsHash
-      console.log('-----> videoCid', videoCid)
-    }
-
-    // TODO: add video to metadata
     const metadata = trackMetadata({
       id: track.id,
       title: track.title!,
@@ -69,9 +29,9 @@ export default defineEventHandler(async (event) => {
         role: artist.role,
         address: artist.address,
       })),
-      artwork: `ipfs://${artworkCid}`,
-      audio: `ipfs://${audioCid}`,
-      video: track.video ? `ipfs://${videoCid}` : undefined,
+      artwork: `ipfs://${track.artwork_ipfs_cid}`,
+      audio: `ipfs://${track.audio_ipfs_cid}`,
+      video: track.video_ipfs_cid ? `ipfs://${track.video_ipfs_cid}` : undefined,
       duration: track.duration!,
       license: toLicense(track.license!),
       genre: toTrackGenre(track.genre!),
@@ -91,24 +51,26 @@ export default defineEventHandler(async (event) => {
       version: track.version ? track.version : undefined,
     })
 
-    const { IpfsHash: metadataCid } = await pinata.pinJSONToIPFS(metadata, { pinataMetadata: { name: `track_metadata_${track.id}.json` } })
+    const { cid: metadataCid } = await useIpfs().put(
+      `track_metadata_${track.id}.json`,
+      new Blob([JSON.stringify(metadata)], { type: 'application/json' }),
+      user.address
+    )
 
     await prisma?.tracks.update({
-      where: { id: track.id },
+      where: {
+        id: track.id,
+        user_id: user.userId
+      },
       data: {
-        artwork_ipfs_cid: artworkCid,
-        audio_ipfs_cid: audioCid,
-        video_ipfs_cid: videoCid,
         metadata_ipfs_cid: metadataCid,
-        //published: true,
-        //publishedAt: new Date(),
       }
     })
 
     return {
-      artwork: artworkCid,
-      audio: audioCid,
-      video: videoCid,
+      artwork: track.artwork_ipfs_cid,
+      audio: track.audio_ipfs_cid,
+      video: track.video_ipfs_cid,
       metadata: metadataCid,
     }
   } catch (err) {
@@ -117,5 +79,4 @@ export default defineEventHandler(async (event) => {
       status: 500,
     })
   }
-
 })
