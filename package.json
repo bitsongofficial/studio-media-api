@@ -2,8 +2,7 @@
   "name": "studio-media-api",
   "private": true,
   "scripts": {
-    "build": "prisma generate && nitro build && npm run copy-deps",
-    "copy-deps": "cp -R ./node_modules/.pnpm/node-datachannel@0.8.0/node_modules/node-datachannel/build ./.output/server/node_modules/node-datachannel/",
+    "build": "prisma generate && nitro build",
     "dev": "nitro dev",
     "prepare": "nitro prepare",
     "preview": "node .output/server/index.mjs"
