@@ -45,7 +45,8 @@ export default defineEventHandler(async (event) => {
         user_id: user.userId
       },
       data: {
-        artwork: path
+        artwork: path,
+        artwork_ipfs_cid: cid,
       },
       select: {
         id: true,

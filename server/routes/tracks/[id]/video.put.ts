@@ -45,6 +45,7 @@ export default defineEventHandler(async (event) => {
         user_id: user.userId,
       },
       data: {
+        video_ipfs_cid: cid,
         video: path,
         video_mime_type: contenType,
         video_format: format_name,
