@@ -11,37 +11,28 @@ export default defineEventHandler(async (event) => {
   try {
     const { ids } = await readValidatedBody(event, schema.parse)
 
-    // const tracks = await prisma.private_uploads.findMany({
-    //   where: {
-    //     AND: {
-    //       id: {
-    //         in: ids
-    //       },
-    //       user_id: user.userId
-    //     }
-    //   }
-    // })
-
-    // 1. TODO: Remove from helia
-    // for await (const key of event.context.blockstore.deleteMany(tracks.map(t => CID.parse(t.audio_cid)))) {
-    //   console.log(`deleted content with key ${key}`)
-    //   await event.context.datastore.delete(new Key(key.toString()))
-    // }
-    // for await (const key of event.context.datastore.delete()
-    //   console.log(`deleted content with key ${key}`)
-    // }
-    // 2. Remove from pinning service
-
-    await prisma.private_uploads.deleteMany({
-      where: {
-        AND: {
-          id: {
-            in: ids
-          },
-          user_id: user.userId
+    for (const id of ids) {
+      const data = await prisma.private_uploads.findFirst({
+        where: {
+          AND: {
+            id,
+            user_id: user.userId
+          }
         }
+      })
+
+      if (data === null) {
+        throw createError({ statusCode: 404, statusMessage: `File not found: ${id}` })
       }
-    })
+
+      await useIpfs().del(data.audio_cid, user.address)
+
+      await prisma.private_uploads.delete({
+        where: {
+          id
+        }
+      })
+    }
   } catch (e) {
     consola.error(e)
     throw createError({ statusCode: 400, statusMessage: `Error deleting files` })
