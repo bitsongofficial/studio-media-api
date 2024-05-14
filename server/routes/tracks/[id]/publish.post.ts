@@ -11,7 +11,7 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  if (track.artwork_ipfs_cid && track.audio_ipfs_cid) {
+  if (track.artwork_ipfs_cid && track.audio_ipfs_cid && track.metadata_ipfs_cid) {
     throw createError({
       message: "Track already published",
       status: 400,
