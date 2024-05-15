@@ -19,7 +19,7 @@ export function useTrack() {
     }
 
     const s3Client = getS3Client()
-    const bucket = useRuntimeConfig().awsS3BucketTracks
+    const bucket = useRuntimeConfig().s3
 
     // 1. delete audio from storage
     try {
