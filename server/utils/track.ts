@@ -36,6 +36,7 @@ export function useTrack() {
         console.log('audio deleted from ipfs')
       }
     } catch (error) {
+      console.error(error)
       throw new Error('Error deleting audio from s3')
     }
 
