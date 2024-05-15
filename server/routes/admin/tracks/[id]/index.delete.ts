@@ -19,6 +19,7 @@ export default defineEventHandler(async (event) => {
   try {
     await useTrack().del(trackId)
   } catch (error) {
+    console.error('Error deleting track', error)
     throw createError({ statusMessage: 'Error deleting track', statusCode: 500 })
   }
 
