@@ -1,9 +1,8 @@
 import { TrackSchema } from '@bitsongjs/metadata'
-import pinataSDK from '@pinata/sdk'
 import { nanoid } from 'nanoid'
-import fs from 'node:fs'
 import { useIpfsLink } from "~/utils"
 import prisma from '~/utils/db'
+import { createReadStream } from 'fs'
 
 export default defineEventHandler(async (event) => {
   const user = await ensureAuth(event)
@@ -78,7 +77,6 @@ export default defineEventHandler(async (event) => {
   /**
    * Transcoding
    */
-  const pinata = new pinataSDK(useRuntimeConfig().pinata.apiKey, useRuntimeConfig().pinata.apiSecret);
 
   // 1. create audio preview
   // ex: ffmpeg -i audio.wav -ss 0 -t 15 preview.mp3
@@ -96,8 +94,7 @@ export default defineEventHandler(async (event) => {
   ])
 
   // open file preview stream
-  const previewStream = fs.createReadStream(previewOutputAudio)
-  const { IpfsHash } = await pinata.pinFileToIPFS(previewStream, { pinataMetadata: { name: `mnft_${nft.id}_audio-preview` } })
+  const { cid } = await useIpfs().put(`mnft_${nft.id}_audio-preview.mp3`, createReadStream(previewOutputAudio), nft.sender)
 
   await prisma.music_nfts.create({
     data: {
@@ -106,7 +103,7 @@ export default defineEventHandler(async (event) => {
       titleLocale: metadata.data.bitsong.titleLocale,
       artwork: metadata.data.bitsong.artwork,
       audio: metadata.data.bitsong.audio,
-      audio_preview: `ipfs://${IpfsHash}`,
+      audio_preview: `ipfs://${cid}`,
       video: metadata.data.bitsong.video,
       country: metadata.data.bitsong.country,
       duration: duration ?? 0,
