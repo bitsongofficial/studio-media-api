@@ -16,7 +16,7 @@ export default defineEventHandler(async (event) => {
       artwork: true,
       status: true,
     },
-    take: 10,
+    take: 50,
     orderBy: {
       created_at: 'desc'
     }
