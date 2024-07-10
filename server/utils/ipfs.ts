@@ -43,28 +43,34 @@ export function useIpfs() {
       }
 
       if (opts.storeOnDb) {
-        await prisma.storage_ipfs.upsert({
-          where: {
-            id: cidV0
-          },
-          create: {
-            id: cidV0,
-            name: filename,
-            size,
-            owners: {
-              create: {
-                owner
+        try {
+          await prisma.storage_ipfs.upsert({
+            where: {
+              id: cidV0
+            },
+            create: {
+              id: cidV0,
+              name: filename,
+              size,
+              owners: {
+                create: {
+                  owner
+                }
               }
-            }
-          },
-          update: {
-            owners: {
-              create: {
-                owner
+            },
+            update: {
+              owners: {
+                create: {
+                  owner
+                }
               }
-            }
-          },
-        })
+            },
+          })
+        } catch (e) {
+          consola.error(`Cid: ${cidV0}, Owner: ${owner}`)
+          consola.error(`Error storing on DB: ${e.message}`)
+          throw new Error('Error storing on DB')
+        }
       }
 
       const { apiKey, apiSecret, enable } = useRuntimeConfig().pinata
