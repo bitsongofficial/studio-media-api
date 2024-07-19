@@ -15,7 +15,7 @@ export default defineEventHandler(async (event) => {
     coverStream.push(null);
 
     const { cid } = await useIpfs().put(`${user.address}_cover`, coverStream, user.address)
-    const updatedUser = await auth.updateUserAttributes(user.userId, { avatar: cid })
+    const updatedUser = await auth.updateUserAttributes(user.userId, { cover: cid })
 
     return {
       user: updatedUser
