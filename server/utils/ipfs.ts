@@ -44,6 +44,28 @@ export function useIpfs() {
 
       if (opts.storeOnDb) {
         try {
+          // await prisma.storage_ipfs.upsert({
+          //   where: {
+          //     id: cidV0
+          //   },
+          //   create: {
+          //     id: cidV0,
+          //     name: filename,
+          //     size,
+          //     owners: {
+          //       create: {
+          //         owner
+          //       }
+          //     }
+          //   },
+          //   update: {
+          //     owners: {
+          //       create: {
+          //         owner
+          //       }
+          //     }
+          //   },
+          // })
           await prisma.storage_ipfs.upsert({
             where: {
               id: cidV0
@@ -52,20 +74,37 @@ export function useIpfs() {
               id: cidV0,
               name: filename,
               size,
-              owners: {
-                create: {
-                  owner
-                }
-              }
+              owners: {}
             },
-            update: {
-              owners: {
-                create: {
-                  owner
-                }
-              }
-            },
+            update: {}
           })
+
+          const existingOwner = await prisma.storage_ipfs.findFirst({
+            where: {
+              id: cidV0,
+              owners: {
+                some: {
+                  owner: owner
+                }
+              }
+            },
+            include: {
+              owners: true
+            }
+          });
+
+          if (!existingOwner.owners.some(o => o.owner === owner)) {
+            await prisma.storage_ipfs.update({
+              where: {
+                id: cidV0
+              },
+              data: {
+                owners: {
+                  create: { owner }
+                }
+              }
+            });
+          }
         } catch (e) {
           consola.error(`Cid: ${cidV0}, Owner: ${owner}`)
           consola.error(`Error storing on DB: ${e.message}`)
