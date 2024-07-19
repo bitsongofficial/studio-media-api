@@ -66,44 +66,44 @@ export function useIpfs() {
           //     }
           //   },
           // })
-          await prisma.storage_ipfs.upsert({
+
+          const record = await prisma.storage_ipfs.findUnique({
             where: {
               id: cidV0
-            },
-            create: {
-              id: cidV0,
-              name: filename,
-              size,
-              owners: {}
-            },
-            update: {}
+            }
           })
 
-          const existingOwner = await prisma.storage_ipfs.findFirst({
-            where: {
-              id: cidV0,
-              owners: {
-                some: {
-                  owner: owner
-                }
-              }
-            },
-            include: {
-              owners: true
-            }
-          });
-
-          if (!existingOwner.owners.some(o => o.owner === owner)) {
-            await prisma.storage_ipfs.update({
-              where: {
-                id: cidV0
-              },
+          if (!record) {
+            await prisma.storage_ipfs.create({
               data: {
+                id: cidV0,
+                name: filename,
+                size,
                 owners: {
-                  create: { owner }
+                  create: {
+                    owner
+                  }
                 }
               }
-            });
+            })
+          }
+
+          const ownerRecord = await prisma.storage_ipfs_owners.findUnique({
+            where: {
+              ipfs_id_owner: {
+                ipfs_id: cidV0,
+                owner
+              }
+            }
+          })
+
+          if (!ownerRecord) {
+            await prisma.storage_ipfs_owners.create({
+              data: {
+                ipfs_id: cidV0,
+                owner
+              }
+            })
           }
         } catch (e) {
           consola.error(`Cid: ${cidV0}, Owner: ${owner}`)
