@@ -1,4 +1,5 @@
 import { Readable } from 'stream';
+import { validateImage } from '~/utils/image';
 
 export default defineEventHandler(async (event) => {
   const user = await ensureAuth(event)
@@ -13,6 +14,8 @@ export default defineEventHandler(async (event) => {
     const coverStream = new Readable();
     coverStream.push(cover.data);
     coverStream.push(null);
+
+    await validateImage(cover.data, 'cover')
 
     const { cid } = await useIpfs().put(`${user.address}_cover`, coverStream, user.address)
     const updatedUser = await auth.updateUserAttributes(user.userId, { cover: cid })

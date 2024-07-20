@@ -1,0 +1,77 @@
+import sharp from 'sharp';
+import { Metadata } from 'sharp'
+
+const imageOptions = {
+  'avatar': {
+    min: { width: 100, height: 100, size: 0 },
+    max: { width: 1000, height: 1000, size: 15 * 1024 * 1024 },
+    formats: ['jpeg', 'jpg', 'png'],
+  },
+  'cover': {
+    min: { width: 1000, height: 500, size: 0 },
+    max: { width: 2000, height: 1000, size: 30 * 1024 * 1024 },
+    formats: ['jpeg', 'jpg', 'png'],
+  }
+}
+
+export async function getImageMetadata(image: Buffer
+  | ArrayBuffer
+  | Uint8Array
+  | Uint8ClampedArray
+  | Int8Array
+  | Uint16Array
+  | Int16Array
+  | Uint32Array
+  | Int32Array
+  | Float32Array
+  | Float64Array
+  | string): Promise<Metadata> {
+  return await sharp(image).metadata()
+}
+
+export async function validateImage(
+  image: Buffer
+    | ArrayBuffer
+    | Uint8Array
+    | Uint8ClampedArray
+    | Int8Array
+    | Uint16Array
+    | Int16Array
+    | Uint32Array
+    | Int32Array
+    | Float32Array
+    | Float64Array
+    | string,
+  type: 'avatar' | 'cover'
+): Promise<void> {
+  const { width, height, format, size } = await getImageMetadata(image)
+  const { max, min, formats } = imageOptions[type]
+
+  if (width < min.width || height < min.height) {
+    throw new Error(
+      `Image is too small. Minimum dimensions are ${min.width}x${min.height}`
+    )
+  }
+
+  if (width > max.width || height > max.height) {
+    throw new Error(
+      `Image is too large. Maximum dimensions are ${max.width}x${max.height}`
+    )
+  }
+
+  if (size > max.size) {
+    throw new Error(
+      `Image is too large. Maximum size is ${max.size / 1024 / 1024}MB`
+    )
+  }
+
+  if (size === min.size) {
+    throw new Error('Image is empty')
+  }
+
+  if (!formats.includes(format)) {
+    throw new Error(`Invalid image format. Supported formats are ${formats.join(', ')}`)
+  }
+
+  return Promise.resolve()
+}
