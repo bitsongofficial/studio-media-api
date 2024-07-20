@@ -3,13 +3,13 @@ import { Metadata } from 'sharp'
 
 const imageOptions = {
   'avatar': {
-    min: { width: 100, height: 100, size: 0 },
-    max: { width: 1000, height: 1000, size: 15 * 1024 * 1024 },
+    min: { width: 400, height: 400, size: 50 },
+    max: { width: 1200, height: 1200, size: 15 * 1024 * 1024 },
     formats: ['jpeg', 'jpg', 'png'],
   },
   'cover': {
-    min: { width: 1000, height: 500, size: 0 },
-    max: { width: 2000, height: 1000, size: 30 * 1024 * 1024 },
+    min: { width: 1374, height: 300, size: 50 },
+    max: { width: 4122, height: 900, size: 30 * 1024 * 1024 },
     formats: ['jpeg', 'jpg', 'png'],
   }
 }
