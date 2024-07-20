@@ -29,6 +29,9 @@ dependencies:
   '@prisma/client':
     specifier: ^5.13.0
     version: 5.13.0(prisma@5.13.0)
+  bignumber.js:
+    specifier: ^9.1.2
+    version: 9.1.2
   consola:
     specifier: ^3.2.3
     version: 3.2.3
@@ -2785,6 +2788,10 @@ packages:
 
   /bech32@1.1.4:
     resolution: {integrity: sha512-s0IrSOzLlbvX7yp4WBfPITzpAU8sqQcpsmwXDiKwrG4r491vwCO/XpejasRNl0piBMe/DvP4Tz0mIS/X1DPJBQ==}
+    dev: false
+
+  /bignumber.js@9.1.2:
+    resolution: {integrity: sha512-2/mKyZH9K85bzOEfhXDBFZTGd1CTs+5IHpeFQo9luiBG7hghdC851Pj2WAhb6E3R6b9tZj/XKhbg4fum+Kepug==}
     dev: false
 
   /binary-extensions@2.3.0:

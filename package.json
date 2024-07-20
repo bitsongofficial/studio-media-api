@@ -24,6 +24,7 @@
     "@nftstorage/ipfs-cluster": "^5.0.1",
     "@pinata/sdk": "^2.1.0",
     "@prisma/client": "^5.13.0",
+    "bignumber.js": "^9.1.2",
     "consola": "^3.2.3",
     "dotenv": "^16.4.5",
     "file-type": "^19.0.0",
