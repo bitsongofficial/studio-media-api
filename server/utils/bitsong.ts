@@ -328,3 +328,119 @@ export function useCurveSimulator(amount: number, opts: CurveOptions) {
     sellPrice: sellPrice(),
   }
 }
+
+const GetAccountSummary = gql`
+  query AccountSummary($address: String!) {
+    transactions(
+      orderBy: CREATED_AT_DESC
+      filter: {
+        recipient: { equalTo: $address }
+        createdAt: { greaterThan: "2024-01-09T00:00:00.000+00:00" }
+      }
+    ) {
+      totalCount
+      aggregates {
+        sum {
+          quantity
+          price
+          referralAmount
+          royalties
+          protocolFee
+          refund
+        }
+      }
+      groupedAggregates(groupBy: TX_TYPE) {
+        keys
+        sum {
+          quantity
+          price
+          referralAmount
+          royalties
+          protocolFee
+          refund
+        }
+      }
+    }
+  }
+`
+
+interface GetAccountSummaryRequest {
+  transactions: {
+    totalCount: number
+    aggregates: {
+      sum: {
+        quantity: number
+        price: number
+        referralAmount: number
+        royalties: number
+        protocolFee: number
+        refund: number
+      }
+    }
+    groupedAggregates: {
+      keys: string[]
+      sum: {
+        quantity: number
+        price: number
+        referralAmount: number
+        royalties: number
+        protocolFee: number
+        refund: number
+      }
+    }[]
+  }
+}
+
+interface AccountSummaryItem {
+  quantity: number
+  volume: number
+  price: number
+  referrals: number
+  royalties: number
+  protocolFee: number
+  refund: number
+}
+
+interface GetAccountSummaryResponse {
+  total: AccountSummaryItem
+  mint: AccountSummaryItem
+  burn: AccountSummaryItem
+}
+
+export async function getAccountSummary(address: string): Promise<GetAccountSummaryResponse> {
+  const response = await request<GetAccountSummaryRequest>(BS721_CURVE_GQL_ENDPOINT, GetAccountSummary, { address })
+
+  const total = response.transactions.aggregates.sum
+  const mint = response.transactions.groupedAggregates.find((agg) => agg.keys[0].toLowerCase() === 'mint')?.sum
+  const burn = response.transactions.groupedAggregates.find((agg) => agg.keys[0].toLowerCase() === 'burn')?.sum
+
+  return {
+    total: {
+      quantity: parseInt(total.quantity.toString()),
+      price: fromMicroAmount(total.price),
+      volume: fromMicroAmount(total.price - total.refund),
+      referrals: fromMicroAmount(total.referralAmount),
+      royalties: fromMicroAmount(total.royalties),
+      protocolFee: fromMicroAmount(total.protocolFee),
+      refund: fromMicroAmount(total.refund),
+    },
+    mint: {
+      quantity: parseInt(mint?.quantity.toString() || '0'),
+      price: fromMicroAmount(mint?.price || 0),
+      volume: fromMicroAmount(mint?.price - (mint?.refund || 0) || 0),
+      referrals: fromMicroAmount(mint?.referralAmount || 0),
+      royalties: fromMicroAmount(mint?.royalties || 0),
+      protocolFee: fromMicroAmount(mint?.protocolFee || 0),
+      refund: fromMicroAmount(mint?.refund || 0),
+    },
+    burn: {
+      quantity: parseInt(burn?.quantity.toString() || '0'),
+      price: fromMicroAmount(burn?.price || 0),
+      volume: fromMicroAmount(burn?.price - (burn?.refund || 0) || 0),
+      referrals: fromMicroAmount(burn?.referralAmount || 0),
+      royalties: fromMicroAmount(burn?.royalties || 0),
+      protocolFee: fromMicroAmount(burn?.protocolFee || 0),
+      refund: fromMicroAmount(burn?.refund || 0),
+    },
+  }
+}
