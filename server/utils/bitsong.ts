@@ -394,7 +394,6 @@ interface GetAccountSummaryRequest {
 interface AccountSummaryItem {
   quantity: number
   volume: number
-  price: number
   referrals: number
   royalties: number
   protocolFee: number
@@ -417,8 +416,7 @@ export async function getAccountSummary(address: string): Promise<GetAccountSumm
   return {
     total: {
       quantity: parseInt(total.quantity.toString()),
-      price: fromMicroAmount(total.price),
-      volume: fromMicroAmount(total.price - total.refund),
+      volume: fromMicroAmount(total.price),
       referrals: fromMicroAmount(total.referralAmount),
       royalties: fromMicroAmount(total.royalties),
       protocolFee: fromMicroAmount(total.protocolFee),
@@ -426,8 +424,7 @@ export async function getAccountSummary(address: string): Promise<GetAccountSumm
     },
     mint: {
       quantity: parseInt(mint?.quantity.toString() || '0'),
-      price: fromMicroAmount(mint?.price || 0),
-      volume: fromMicroAmount(mint?.price - (mint?.refund || 0) || 0),
+      volume: fromMicroAmount(mint?.price || 0),
       referrals: fromMicroAmount(mint?.referralAmount || 0),
       royalties: fromMicroAmount(mint?.royalties || 0),
       protocolFee: fromMicroAmount(mint?.protocolFee || 0),
@@ -435,8 +432,7 @@ export async function getAccountSummary(address: string): Promise<GetAccountSumm
     },
     burn: {
       quantity: parseInt(burn?.quantity.toString() || '0'),
-      price: fromMicroAmount(burn?.price || 0),
-      volume: fromMicroAmount(burn?.price - (burn?.refund || 0) || 0),
+      volume: fromMicroAmount(burn?.price || 0),
       referrals: fromMicroAmount(burn?.referralAmount || 0),
       royalties: fromMicroAmount(burn?.royalties || 0),
       protocolFee: fromMicroAmount(burn?.protocolFee || 0),
