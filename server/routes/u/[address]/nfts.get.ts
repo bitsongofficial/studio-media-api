@@ -2,7 +2,7 @@ import { getNftsByOwner } from "~/utils/bitsong"
 import { z } from 'zod'
 
 const schema = z.object({
-  includeValue: z.boolean().optional().default(true)
+  includeValue: z.coerce.boolean().optional().default(true)
 })
 
 export default defineEventHandler(async (event) => {
