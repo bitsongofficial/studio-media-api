@@ -1,5 +1,5 @@
 import { gql, request } from "graphql-request"
-import { TrackSchema } from '@bitsongjs/metadata'
+import { BaseMetadata, TrackMetadataDetails, TrackSchema } from '@bitsongjs/metadata'
 import BigNumber from "bignumber.js";
 
 const BS721_BASE_GQL_ENDPOINT = "https://indexer-bs721-base.bitsong.io/"
@@ -126,6 +126,8 @@ const GetNftsByOwner = gql`
           }
           metadata {
             name
+            schema
+            bitsong
             image
           }
         }
@@ -155,6 +157,14 @@ interface GetNftsByOwnerRequest {
         }
         metadata: {
           name: string
+          schema: string
+          bitsong?: {
+            artists?: {
+              name: string
+              role: string
+              address: string
+            }[]
+          }
           image: string
         }
       }
@@ -167,6 +177,7 @@ interface GetNftsByOwnerResponse {
   nfts: {
     nft: string
     name: string
+    subtitle?: string
     image: string
     totalIds: number
     tokenIds?: string[]
@@ -182,6 +193,7 @@ export async function getNftsByOwner(address: string): Promise<GetNftsByOwnerRes
       return {
         nft: nft.nftId,
         name: nft.nft.name,
+        subtitle: nft.nft.metadata.bitsong?.artists?.map((artist) => artist.name).join(', '),
         image: nft.nft.metadata.image,
         totalIds: parseInt(response.nftTokens.groupedAggregates.find((agg) => agg.keys[0] === nft.nftId)?.distinctCount.tokenId || '0'),
         tokenIds: nft.nft.tokens.nodes.map((token) => token.tokenId),
@@ -438,5 +450,136 @@ export async function getAccountSummary(address: string): Promise<GetAccountSumm
       protocolFee: fromMicroAmount(burn?.protocolFee || 0),
       refund: fromMicroAmount(burn?.refund || 0),
     },
+  }
+}
+
+const GetNft = gql`
+query GetNft($address: String!) {
+  nft(id: $address) {
+    address: id
+    name
+    sender
+    minter
+    uri
+    symbol
+    blockHeight
+    txHash
+    createdAt
+    metadata {
+      schema
+      id
+      name
+      image
+      description
+      animationUrl
+      externalUrl
+      attributes
+      bitsong
+    }
+  }
+}`
+
+enum ContentSchemaId {
+  TRACK_LATEST = "https://json-schemas.bitsong.io/metadata/track/1.0.0.json",
+  NFT_LATEST = "https://json-schemas.bitsong.io/metadata/nft/1.0.0.json"
+}
+
+type Metadata = BaseMetadata & {
+  schema: ContentSchemaId.TRACK_LATEST | ContentSchemaId.NFT_LATEST
+  bitsong: TrackMetadataDetails;
+};
+
+interface GetNftRequest {
+  nft: {
+    address: string
+    name: string
+    sender: string
+    minter: string
+    uri: string
+    symbol: string
+    blockHeight: number
+    txHash: string
+    createdAt: string
+    metadata: Metadata
+  }
+}
+
+interface GetNftResponse {
+  address: string
+  name: string
+  sender: string
+  minter: string
+  uri: string
+  symbol: string
+  blockHeight: number
+  txHash: string
+  createdAt: string
+  metadata: Metadata
+}
+
+export async function getNft(address: string): Promise<GetNftResponse> {
+  const response = await request<GetNftRequest>(BS721_BASE_GQL_ENDPOINT, GetNft, { address })
+  return response.nft
+}
+
+const GetMarketplacesByCreator = gql`
+query GetMarketplacesByCreator($address: String!) {
+  marketplaces(
+    filter: {
+      sender: {
+        equalTo: $address
+      }
+    },
+    orderBy: START_TIME_DESC
+  ) {
+    totalCount
+    nodes {
+      address: id
+      sender
+      nft: nftAddress
+      startTime
+    }
+  }
+}`
+
+interface GetMarketplacesByCreatorRequest {
+  marketplaces: {
+    totalCount: number
+    nodes: {
+      address: string
+      sender: string
+      nft: string
+      startTime: string
+    }[]
+  }
+}
+
+interface GetMarketplacesByCreatorResponse {
+  totalCount: number
+  marketplaces: {
+    address: string
+    sender: string
+    startTime: string
+    nft: GetNftResponse
+  }[]
+}
+
+export async function getMarketplacesByCreator(address: string): Promise<GetMarketplacesByCreatorResponse> {
+  const response = await request<GetMarketplacesByCreatorRequest>(BS721_CURVE_GQL_ENDPOINT, GetMarketplacesByCreator, { address })
+
+  const marketplaces = await Promise.all(response.marketplaces.nodes.map(async (marketplace) => {
+    const nft = await $fetch(`/nfts/${marketplace.nft}`)
+
+    return {
+      address: marketplace.address,
+      sender: marketplace.sender,
+      startTime: marketplace.startTime,
+      nft: nft as GetNftResponse
+    }
+  }))
+
+  return {
+    totalCount: response.marketplaces.totalCount,
+    marketplaces
   }
 }
