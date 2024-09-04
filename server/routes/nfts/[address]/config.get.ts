@@ -14,12 +14,21 @@ export default defineCachedEventHandler(async (event) => {
 
     interface QueryConfigResponse {
       data: {
-        ratio: number
+        creator: string
+        symbol: string
+        name: string
+        uri: string
+        payment_denom: string
+        max_per_address?: number
+        next_token_id: string
         seller_fee_bps: number
         referral_fee_bps: number
         protocol_fee_bps: number
+        start_time: string
         max_edition?: number
-        max_per_address?: number
+        bs721_address: string
+        payment_address: string
+        ratio: number
       }
     }
 
@@ -37,11 +46,22 @@ export default defineCachedEventHandler(async (event) => {
     return {
       marketplaceAddress: marketplaceAddress,
       nftAddress: address,
-      ratio: config.data.ratio,
+      totalSupply: supply.data.count,
+      creator: config.data.creator,
+      symbol: config.data.symbol,
+      name: config.data.name,
+      uri: config.data.uri,
+      paymentDenom: config.data.payment_denom,
+      maxPerAddress: config.data.max_per_address,
+      nextTokenId: config.data.next_token_id,
       sellerFeeBps: config.data.seller_fee_bps,
       referralFeeBps: config.data.referral_fee_bps,
       protocolFeeBps: config.data.protocol_fee_bps,
-      totalSupply: supply.data.count,
+      startTime: config.data.start_time,
+      maxEdition: config.data.max_edition,
+      bs721Address: config.data.bs721_address,
+      paymentAddress: config.data.payment_address,
+      ratio: config.data.ratio,
     }
   } catch (e) {
     console.error(e)
