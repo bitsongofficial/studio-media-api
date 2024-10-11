@@ -74,6 +74,7 @@ export default defineEventHandler(async (event) => {
       metadata: metadataCid,
     }
   } catch (err) {
+    console.error(`Failed to publish track: ${err}`)
     throw createError({
       message: "Failed to publish track artwork",
       status: 500,
