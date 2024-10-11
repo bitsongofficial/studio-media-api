@@ -12,8 +12,8 @@ dependencies:
     specifier: ^3.565.0
     version: 3.565.0
   '@bitsongjs/metadata':
-    specifier: ^0.2.1
-    version: 0.2.1
+    specifier: ^0.2.2
+    version: 0.2.2
   '@bitsongjs/telescope':
     specifier: 3.0.0-dev.23
     version: 3.0.0-dev.23
@@ -749,8 +749,8 @@ packages:
       regenerator-runtime: 0.14.1
     dev: false
 
-  /@bitsongjs/metadata@0.2.1:
-    resolution: {integrity: sha512-VcbJw8I9FAzIqIwCFCzoeY3NgNGkcQoqhGctmPoawnC4HIla8ohaWyoLVXDPJKc1Md4Inw9B1t6cwYS8MeBpGg==}
+  /@bitsongjs/metadata@0.2.2:
+    resolution: {integrity: sha512-zeFJJC+5HShSOwi/oTT38zq1UHdjpb+L12S4+v0JnG6d6K4ndx1HUETKDg7y7XoyHrJTRT8QrtcbapG9IWueJg==}
     dependencies:
       '@cosmjs/encoding': 0.32.3
       uuid: 9.0.1
