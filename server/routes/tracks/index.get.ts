@@ -15,6 +15,7 @@ export default defineEventHandler(async (event) => {
       title: true,
       artwork: true,
       status: true,
+      nft_address: true
     },
     take: 50,
     orderBy: {
