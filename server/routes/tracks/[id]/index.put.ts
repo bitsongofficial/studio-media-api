@@ -117,6 +117,15 @@ export default defineEventHandler(async (event) => {
             referral_fee: data.marketplace.referral_fee,
           }
         })
+
+        await tx.tracks.update({
+          where: {
+            id: _track.id,
+          },
+          data: {
+            status: 'To_Mint'
+          }
+        })
       }
 
       return track
