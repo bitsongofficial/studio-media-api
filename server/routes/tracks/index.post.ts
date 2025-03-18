@@ -9,9 +9,9 @@ import { createReadStream } from 'fs'
 
 export default defineEventHandler(async (event) => {
   const user = await ensureAuth(event)
-  if (!user.canUpload) {
-    throw createError({ statusCode: 403, statusMessage: "Unauthorized" })
-  }
+  // if (!user.canUpload) {
+  //   throw createError({ statusCode: 403, statusMessage: "Unauthorized" })
+  // }
 
   const form = await readFormData(event)
   const audioForm = form.get('audio')
